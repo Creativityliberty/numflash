@@ -1,0 +1,58 @@
+
+{
+  "name": "Nümflash API",
+  "version": "1.0.0",
+  "description": "Orchestrate AI development workflows using InsForge Agents",
+  "tools": [
+    {
+      "name": "create_project",
+      "description": "Create a new Nümflash development project.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Project Name" },
+          "description": { "type": "string", "description": "Project Description" }
+        },
+        "required": ["name"]
+      },
+      "handler": {
+        "type": "function",
+        "function": "create-project"
+      }
+    },
+    {
+      "name": "plan_workflow",
+      "description": "Use the Chef Agent to plan a DAG of tasks based on a prompt.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectId": { "type": "string", "description": "Project UUID" },
+          "prompt": { "type": "string", "description": "User requirement prompt" },
+          "modelId": { "type": "string", "description": "Gemini Model ID (e.g. gemini-3-pro-preview)" }
+        },
+        "required": ["projectId", "prompt"]
+      },
+      "handler": {
+        "type": "function",
+        "function": "agent-chef"
+      }
+    },
+    {
+      "name": "execute_task",
+      "description": "Use the Worker Agent to generate code for a specific task.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectId": { "type": "string", "description": "Project UUID" },
+          "taskId": { "type": "string", "description": "Task UUID" },
+          "modelId": { "type": "string", "description": "Gemini Model ID" }
+        },
+        "required": ["projectId", "taskId"]
+      },
+      "handler": {
+        "type": "function",
+        "function": "agent-worker"
+      }
+    }
+  ]
+}

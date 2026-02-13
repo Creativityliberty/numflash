@@ -6,6 +6,7 @@ export const DagService = {
    * Récupère l'arborescence complète d'un projet
    */
   async getProjectTasks(projectId: string) {
+    // RLS will automatically filter, but we explicitly filter by project_id
     const { data, error } = await insforge.database
       .from('tasks')
       .select('*')
@@ -22,7 +23,7 @@ export const DagService = {
   async createTask(taskData: { project_id: string; title: string; parent_id?: string; depth: number }) {
     const { error } = await insforge.database
       .from('tasks')
-      .insert([taskData]); // Format [ { ... } ] obligatoire
+      .insert([taskData]);
 
     if (error) throw new Error(error.message);
 

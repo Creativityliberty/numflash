@@ -15,8 +15,16 @@ declare module 'npm:@octokit/rest' {
     }
 }
 
-declare const Deno: {
-    env: {
-        get(key: string): string | undefined;
-    }
-};
+// Add Deno global type
+declare global {
+    const Deno: {
+        env: {
+            get(key: string): string | undefined;
+            toObject(): Record<string, string>;
+        };
+    };
+
+    // Allow Blob/File in Deno env if needed (polyfilled by runtime)
+}
+
+export {};

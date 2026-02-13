@@ -17,6 +17,15 @@ const App: React.FC = () => {
   const { setProject, fetchProjectData, setConnected, checkSession, user, authLoading } = useStore();
   const [darkMode, setDarkMode] = useState(true);
 
+  // Listen for navigation events from Header (Deployment button)
+  useEffect(() => {
+      const handleNavigation = (e: any) => {
+          if (e.detail) setCurrentView(e.detail);
+      };
+      window.addEventListener('navigate-view', handleNavigation);
+      return () => window.removeEventListener('navigate-view', handleNavigation);
+  }, []);
+
   // 1. Check Session on Mount
   useEffect(() => {
       checkSession();

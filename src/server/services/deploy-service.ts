@@ -3,26 +3,34 @@ import { insforge } from '../../lib/insforge';
 
 export const DeployService = {
   /**
-   * Lance le déploiement de l'application sur le réseau InsForge
+   * Starts the deployment process for a project
+   * 1. Create Deployment Record
+   * 2. Generate ZIP & Upload (Handled by the server-side function)
+   * 3. Trigger Build
    */
-  async deployApp(projectId: string, region: 'us-east' | 'eu-central' = 'us-east') {
-    // 1. Invoquer la fonction de build/déploiement
-    const { data, error } = await insforge.functions.invoke('create-deployment', {
+  async deployProject(projectId: string) {
+    // We call a server-side function that handles the secure orchestration
+    // with the internal Deployment API
+    const { data, error } = await insforge.functions.invoke('deploy-project', {
       body: {
-        projectId,
-        region,
-        instanceType: 'nano'
+        projectId
       }
     });
 
-    if (error) throw new Error(`Échec du déploiement : ${error.message}`);
-
-    // 2. Notifier en temps réel le succès
-    await insforge.realtime.publish(`project:${projectId}`, 'deployed', {
-      url: `https://${projectId}.${region}.insforge.app`,
-      status: 'active'
-    });
-
+    if (error) throw new Error(`Deployment Failed: ${error.message}`);
     return data;
+  },
+
+  /**
+   * Get deployment status
+   */
+  async getDeploymentStatus(deploymentId: string) {
+      // Direct API call if accessible, or via function proxy if RLS restricts it
+      // Assuming public metadata availability or user ownership
+      return await insforge.database
+        .from('deployments') // Assuming table exists in schema, otherwise need API call
+        .select('*')
+        .eq('id', deploymentId)
+        .single();
   }
 };

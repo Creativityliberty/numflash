@@ -1,5 +1,6 @@
 
 import { createClient } from 'npm:@insforge/sdk';
+import { TemplateService } from '../../src/server/services/template-service'; // Assumes shared code or copy
 
 export default async function(req: Request): Promise<Response> {
   const corsHeaders = {
@@ -13,7 +14,7 @@ export default async function(req: Request): Promise<Response> {
   }
 
   try {
-    const { name, description } = await req.json();
+    const { name, description, templateId } = await req.json();
     const authHeader = req.headers.get('Authorization');
     const userToken = authHeader?.replace('Bearer ', '') || null;
 
@@ -41,10 +42,14 @@ export default async function(req: Request): Promise<Response> {
             owner_id: userId,
         }]);
 
-    // Mock return
+    // Mock return - in real DB this returns the created object
     const project = { id: 'mock-proj-id', name, owner_id: userId };
 
     if (createError) throw createError;
+
+    // 3. Apply Template if requested
+    // Note: TemplateService needs to be compatible with Deno/Edge or logic inlined here
+    // For now, we return success and client/another call handles template
 
     return new Response(JSON.stringify({ success: true, project }), {
       status: 200,

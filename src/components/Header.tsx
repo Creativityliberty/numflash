@@ -46,7 +46,16 @@ const Header: React.FC<HeaderProps> = ({ currentView }) => {
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-950"></span>
         </button>
 
-        <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity shadow-md">
+        <button
+            onClick={() => {
+                // Navigate to Artifacts view or trigger deploy
+                // For simplicity, we assume the user clicks this to go to the deployment view
+                // In a real router setup, use navigation.
+                const event = new CustomEvent('navigate-view', { detail: 'artifacts' });
+                window.dispatchEvent(event);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity shadow-md"
+        >
             <Rocket size={16} />
             <span>Deploy</span>
         </button>

@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { LayoutDashboard, Network, Code2, Database, Package, Settings, Bot } from 'lucide-react';
+import { LayoutDashboard, Network, Code2, Database, Package, Settings, Bot, LogOut } from 'lucide-react';
 import clsx from 'clsx';
 import { AppView } from '../types';
+import { useStore } from '../store/useStore';
 
 interface SidebarProps {
   activeView: AppView;
@@ -10,6 +11,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) => {
+  const { signOut } = useStore();
+
   const menuItems = [
     { id: 'builder', icon: Bot, label: 'AI Architect' },
     { id: 'dag', icon: Network, label: 'Task Graph' },
@@ -53,10 +56,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) => {
         );
       })}
 
-      <div className="mt-auto">
+      <div className="mt-auto space-y-2">
           <button className="flex items-center gap-3 px-4 py-3 mx-2 rounded-xl text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors w-[calc(100%-16px)]">
               <Settings size={24} />
               <span className="hidden lg:block font-medium">Settings</span>
+          </button>
+
+          <button
+             onClick={() => signOut()}
+             className="flex items-center gap-3 px-4 py-3 mx-2 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-[calc(100%-16px)]"
+          >
+              <LogOut size={24} />
+              <span className="hidden lg:block font-medium">Sign Out</span>
           </button>
       </div>
     </aside>

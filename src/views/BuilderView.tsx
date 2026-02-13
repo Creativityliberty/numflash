@@ -2,13 +2,18 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { ChefAgent } from '../server/agents/chef-agent';
-import { Send, Bot, User, Cpu } from 'lucide-react';
+import { Send, Bot, User, Cpu, Settings2, X } from 'lucide-react';
 import clsx from 'clsx';
+import ModelSelector from '../components/ModelSelector';
+import { GEMINI_MODELS } from '../data/models';
 
 const BuilderView = () => {
-  const { messages, addMessage, currentProject } = useStore();
+  const { messages, addMessage, currentProject, selectedModel } = useStore();
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showModelSelector, setShowModelSelector] = useState(false);
+
+  const activeModel = GEMINI_MODELS.find(m => m.id === selectedModel);
 
   const handleSend = async () => {
     if (!input.trim() || !currentProject) return;
@@ -19,8 +24,8 @@ const BuilderView = () => {
     setIsProcessing(true);
 
     try {
-       // Call Chef Agent to plan
-       await ChefAgent.createWorkflow(currentProject.id, input);
+       // Call Chef Agent to plan with Selected Model
+       await ChefAgent.createWorkflow(currentProject.id, input, selectedModel);
 
        addMessage({
            role: 'system',
@@ -36,7 +41,33 @@ const BuilderView = () => {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto p-4">
+    <div className="flex flex-col h-full max-w-4xl mx-auto p-4 relative">
+
+       {/* Model Selector Header */}
+       <div className="flex justify-between items-center mb-4">
+           <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                onClick={() => setShowModelSelector(!showModelSelector)}>
+                <Bot size={14} className="text-blue-500" />
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {activeModel ? activeModel.name : selectedModel}
+                </span>
+                <Settings2 size={12} className="text-slate-400 ml-1" />
+           </div>
+       </div>
+
+       {/* Model Selector Overlay/Drawer */}
+       {showModelSelector && (
+           <div className="absolute inset-x-4 top-14 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl animate-in slide-in-from-top-4 fade-in duration-200 max-h-[70vh] flex flex-col">
+               <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                   <h3 className="font-bold text-slate-800 dark:text-white">Select AI Model</h3>
+                   <button onClick={() => setShowModelSelector(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+                       <X size={18} />
+                   </button>
+               </div>
+               <ModelSelector />
+           </div>
+       )}
+
        <div className="flex-1 overflow-y-auto space-y-6 pb-4">
           {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-slate-400">

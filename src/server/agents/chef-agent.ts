@@ -5,10 +5,11 @@ export const ChefAgent = {
   /**
    * Planifie le projet en créant les tâches initiales dans la DB
    */
-  async createWorkflow(projectId: string, userPrompt: string) {
+  async createWorkflow(projectId: string, userPrompt: string, modelId: string = 'gemini-3-pro-preview') {
     // 1. Demander à l'IA de structurer le plan
+    // Note: Some models might not support JSON mode perfectly, but we assume InsForge Gateway handles it or we parse carefully.
     const completion = await insforge.ai.chat.completions.create({
-      model: 'anthropic/claude-3.5-haiku',
+      model: modelId,
       messages: [
         {
           role: 'system',

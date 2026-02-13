@@ -6,12 +6,12 @@ export const WorkerAgent = {
   /**
    * Génère le code d'un composant et le sauvegarde
    */
-  async executeCodingTask(projectId: string, task: any, onChunk?: (text: string) => void) {
+  async executeCodingTask(projectId: string, task: any, modelId: string = 'gemini-3-pro-preview', onChunk?: (text: string) => void) {
     let fullCode = "";
 
     // 1. Streaming de la génération de code
     const stream = await insforge.ai.chat.completions.create({
-      model: 'openai/gpt-4',
+      model: modelId,
       messages: [
         { role: 'system', content: 'Tu es un expert React. Écris uniquement le code sans explications.' },
         { role: 'user', content: `Implémente la tâche suivante : ${task.title}. ${task.description}` }

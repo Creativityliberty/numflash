@@ -29,12 +29,24 @@ interface FileNode {
   content?: string; // Loaded on demand
 }
 
+interface User {
+  id: string;
+  email: string;
+  profile?: {
+      name: string;
+      avatar_url?: string;
+  }
+}
+
 interface AppState {
   currentProject: Project | null;
   tasks: Task[];
   files: FileNode[];
   isConnected: boolean;
   messages: any[]; // Chat history
+  user: User | null;
+  authLoading: boolean;
+  selectedModel: string;
 
   // Actions
   setProject: (project: Project) => void;
@@ -44,9 +56,14 @@ interface AppState {
   setFiles: (files: FileNode[]) => void;
   setConnected: (status: boolean) => void;
   addMessage: (msg: any) => void;
+  setUser: (user: User | null) => void;
+  setAuthLoading: (loading: boolean) => void;
+  setSelectedModel: (modelId: string) => void;
 
   // Async Actions
   fetchProjectData: (projectId: string) => Promise<void>;
+  checkSession: () => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -55,6 +72,9 @@ export const useStore = create<AppState>((set, get) => ({
   files: [],
   isConnected: false,
   messages: [],
+  user: null,
+  authLoading: true,
+  selectedModel: 'gemini-3-pro-preview', // Default model
 
   setProject: (project) => set({ currentProject: project }),
   setTasks: (tasks) => set({ tasks }),
@@ -65,6 +85,9 @@ export const useStore = create<AppState>((set, get) => ({
   setFiles: (files) => set({ files }),
   setConnected: (status) => set({ isConnected: status }),
   addMessage: (msg) => set((state) => ({ messages: [...state.messages, msg] })),
+  setUser: (user) => set({ user }),
+  setAuthLoading: (loading) => set({ authLoading: loading }),
+  setSelectedModel: (modelId) => set({ selectedModel: modelId }),
 
   fetchProjectData: async (projectId) => {
     // 1. Fetch Tasks
@@ -85,5 +108,27 @@ export const useStore = create<AppState>((set, get) => ({
 
     if (files) set({ files: files as FileNode[] });
     if (fileError) console.error("Error fetching files:", fileError);
+  },
+
+  checkSession: async () => {
+      set({ authLoading: true });
+      try {
+          const { data, error } = await insforge.auth.getCurrentSession();
+          if (data?.session?.user) {
+              set({ user: data.session.user as any });
+          } else {
+              set({ user: null });
+          }
+      } catch (error) {
+          console.error("Session check failed", error);
+          set({ user: null });
+      } finally {
+          set({ authLoading: false });
+      }
+  },
+
+  signOut: async () => {
+      await insforge.auth.signOut();
+      set({ user: null, currentProject: null });
   }
 }));

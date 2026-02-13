@@ -7,7 +7,9 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ currentView }) => {
+  // Added 'agent' key to satisfy the Record<AppView, string> constraint as per types.ts
   const viewTitles: Record<AppView, string> = {
+    agent: 'Agent',
     builder: 'Dashboard',
     dag: 'Orchestrator',
     code: 'Studio',

@@ -48,13 +48,15 @@
         };
     </script>
     <style>
-        * { transition: background-color 0.2s ease, border-color 0.2s ease; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        * { transition: background-color 0.3s ease, border-color 0.3s ease; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
-        .dark ::-webkit-scrollbar-thumb { background: #334155; }
-        .glass-header { backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.7); }
-        .dark .glass-header { background: rgba(15, 23, 42, 0.7); }
+        .dark ::-webkit-scrollbar-thumb { background: #1E293B; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass-header { backdrop-filter: blur(16px); background: rgba(255, 255, 255, 0.8); }
+        .dark .glass-header { background: rgba(2, 6, 23, 0.8); }
         .dag-dot-bg {
             background-image: radial-gradient(#CBD5E1 1px, transparent 1px);
             background-size: 24px 24px;
@@ -62,25 +64,19 @@
         .dark .dag-dot-bg {
             background-image: radial-gradient(#1E293B 1px, transparent 1px);
         }
-        @keyframes pulse-soft {
-            0%, 100% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.1); opacity: 1; }
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
-        .animate-pulse-soft { animation: pulse-soft 3s infinite; }
-        .task-strike { position: relative; }
-        .task-strike::after {
-            content: ''; position: absolute; left: 0; top: 50%;
-            height: 1.5px; background: currentColor; width: 0;
-            transition: width 0.3s ease-in-out;
-        }
-        .completed .task-strike::after { width: 100%; }
+        .spin { animation: spin-slow 2s linear infinite; }
     </style>
 <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/"
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "@google/genai": "https://esm.sh/@google/genai"
   }
 }
 </script>

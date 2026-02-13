@@ -1,32 +1,38 @@
 
-export type AppView = 'builder' | 'dag' | 'code' | 'data' | 'artifacts';
+export type AppView = 'agent' | 'builder' | 'dag' | 'code' | 'data' | 'artifacts';
 
 export interface Message {
   id: string;
   sender: 'ai' | 'user';
   text: string;
-  diff?: { removed: string; added: string };
-  action?: {
-    name: string;
-    status: 'running' | 'success' | 'failed';
-    steps: { name: string; status: 'done' | 'running' | 'pending' }[];
-  };
+  status?: 'none' | 'deploying' | 'success' | 'failed';
 }
 
-export interface NodeData {
+export interface Task {
   id: string;
-  label: string;
-  type: string;
-  status: 'success' | 'running' | 'pending' | 'warning';
-  description?: string;
-  position: { x: number; y: number };
+  text: string;
+  completed: boolean;
 }
 
 export interface FileData {
+  id: string;
   name: string;
-  type: 'file' | 'folder';
-  language?: string;
-  content?: string;
-  isOpen?: boolean;
-  children?: FileData[];
+  icon: string;
+  color: string;
+  content: string;
+}
+
+export interface AppState {
+  view: AppView;
+  messages: Message[];
+  tasks: Task[];
+  files: FileData[];
+  darkMode: boolean;
+}
+
+// Structure attendue pour les réponses IA
+export interface AIActionResponse {
+  message: string;
+  action?: 'add_task' | 'add_file' | 'deploy' | 'none';
+  payload?: any;
 }

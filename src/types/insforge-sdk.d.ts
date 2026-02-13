@@ -9,6 +9,9 @@ declare module '@insforge/sdk' {
     auth: {
       getCurrentSession(): Promise<{ data: { session: { user: { id: string } } | null }; error: any }>;
       signInWithOAuth(options: { provider: string; redirectTo?: string }): Promise<{ data: { url: string }; error: any }>;
+      signInWithPassword(credentials: { email: string; password: string }): Promise<{ data: { user: { id: string; email: string; } | null; accessToken: string; } | null; error: any }>;
+      signUp(options: { email: string; password: string; name?: string; options?: any }): Promise<{ data: { user: { id: string; email: string; } | null; accessToken: string | null; } | null; error: any }>;
+      signOut(): Promise<{ error: any }>;
     };
     storage: {
       from(bucket: string): StorageBucket;

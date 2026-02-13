@@ -2,13 +2,44 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { ChefAgent } from '../server/agents/chef-agent';
-import { Send, Bot, User, Cpu } from 'lucide-react';
+import { TemplateService } from '../server/services/template-service';
+import { PROJECT_TEMPLATES } from '../data/templates';
+import { Send, Bot, User, Cpu, Settings2, X, Box } from 'lucide-react';
 import clsx from 'clsx';
+import ModelSelector from '../components/ModelSelector';
+import { GEMINI_MODELS } from '../data/models';
 
 const BuilderView = () => {
-  const { messages, addMessage, currentProject } = useStore();
+  const { messages, addMessage, currentProject, selectedModel } = useStore();
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showModelSelector, setShowModelSelector] = useState(false);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(messages.length === 0); // Show template selector on fresh start
+
+  const activeModel = GEMINI_MODELS.find(m => m.id === selectedModel);
+
+  const handleTemplateSelect = async (templateId: string) => {
+      if (!currentProject) return;
+
+      setIsProcessing(true);
+      setShowTemplateSelector(false);
+      addMessage({ role: 'user', content: `Start with template: ${templateId}`, timestamp: new Date() });
+
+      try {
+          // In a real implementation, this would call the API. Here we simulate the logic.
+          // Note: TemplateService is client-side here, but should ideally be server-side via `create-project`
+          await TemplateService.applyTemplate(currentProject.id, templateId);
+          addMessage({
+              role: 'system',
+              content: `Template ${templateId} applied successfully. You can now customize it or deploy.`,
+              timestamp: new Date()
+          });
+      } catch (e: any) {
+          addMessage({ role: 'system', content: `Error applying template: ${e.message}`, isError: true });
+      } finally {
+          setIsProcessing(false);
+      }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || !currentProject) return;
@@ -17,10 +48,11 @@ const BuilderView = () => {
     addMessage(userMsg);
     setInput("");
     setIsProcessing(true);
+    setShowTemplateSelector(false); // Hide if user starts chatting
 
     try {
-       // Call Chef Agent to plan
-       await ChefAgent.createWorkflow(currentProject.id, input);
+       // Call Chef Agent to plan with Selected Model
+       await ChefAgent.createWorkflow(currentProject.id, input, selectedModel);
 
        addMessage({
            role: 'system',
@@ -36,12 +68,75 @@ const BuilderView = () => {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto p-4">
+    <div className="flex flex-col h-full max-w-4xl mx-auto p-4 relative">
+
+       {/* Model Selector Header */}
+       <div className="flex justify-between items-center mb-4">
+           <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                onClick={() => setShowModelSelector(!showModelSelector)}>
+                <Bot size={14} className="text-blue-500" />
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {activeModel ? activeModel.name : selectedModel}
+                </span>
+                <Settings2 size={12} className="text-slate-400 ml-1" />
+           </div>
+       </div>
+
+       {/* Model Selector Overlay */}
+       {showModelSelector && (
+           <div className="absolute inset-x-4 top-14 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl animate-in slide-in-from-top-4 fade-in duration-200 max-h-[70vh] flex flex-col">
+               <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                   <h3 className="font-bold text-slate-800 dark:text-white">Select AI Model</h3>
+                   <button onClick={() => setShowModelSelector(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+                       <X size={18} />
+                   </button>
+               </div>
+               <ModelSelector />
+           </div>
+       )}
+
        <div className="flex-1 overflow-y-auto space-y-6 pb-4">
-          {messages.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+          {/* Template Selector Card */}
+          {showTemplateSelector && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 animate-in fade-in zoom-in duration-300">
+                  <div
+                    onClick={() => setShowTemplateSelector(false)}
+                    className="p-6 rounded-2xl bg-white dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer flex flex-col items-center justify-center text-center gap-2 group transition-all"
+                  >
+                      <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors">
+                          <Bot size={24} className="text-slate-500 dark:text-slate-400 group-hover:text-blue-600" />
+                      </div>
+                      <h3 className="font-semibold text-slate-700 dark:text-slate-200">Start from Blank</h3>
+                      <p className="text-xs text-slate-500">Let AI build everything from scratch</p>
+                  </div>
+
+                  {PROJECT_TEMPLATES.map(template => (
+                      <div
+                        key={template.id}
+                        onClick={() => handleTemplateSelect(template.id)}
+                        className="p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:shadow-lg cursor-pointer flex flex-col gap-2 transition-all relative overflow-hidden group"
+                      >
+                          <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mb-2">
+                              <Box size={20} className="text-indigo-600 dark:text-indigo-400" />
+                          </div>
+                          <h3 className="font-semibold text-slate-800 dark:text-white">{template.name}</h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{template.description}</p>
+                          <div className="mt-2 flex gap-2">
+                              {template.tags.map(tag => (
+                                  <span key={tag} className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-[10px] text-slate-600 dark:text-slate-300 font-medium">
+                                      {tag}
+                                  </span>
+                              ))}
+                          </div>
+                      </div>
+                  ))}
+              </div>
+          )}
+
+          {messages.length === 0 && !showTemplateSelector && (
+              <div className="flex flex-col items-center justify-center h-32 text-slate-400">
                   <Cpu size={48} className="mb-4 opacity-50" />
-                  <p>Commencez par décrire votre fonctionnalité...</p>
+                  <p>Describe your feature or request...</p>
               </div>
           )}
 

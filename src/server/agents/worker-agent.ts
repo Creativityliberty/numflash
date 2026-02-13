@@ -6,39 +6,22 @@ export const WorkerAgent = {
   /**
    * Génère le code d'un composant et le sauvegarde
    */
-  async executeCodingTask(projectId: string, task: any, onChunk?: (text: string) => void) {
-    let fullCode = "";
+  async executeCodingTask(projectId: string, task: any, modelId: string = 'gemini-3-pro-preview', onChunk?: (text: string) => void) {
+    // Use the Serverless Function. Note: Streaming is not supported in simple invoke(), so we await full result.
+    // If streaming is critical, we would use a different pattern (e.g. Realtime channel for chunks).
 
-    // 1. Streaming de la génération de code
-    const stream = await insforge.ai.chat.completions.create({
-      model: 'openai/gpt-4',
-      messages: [
-        { role: 'system', content: 'Tu es un expert React. Écris uniquement le code sans explications.' },
-        { role: 'user', content: `Implémente la tâche suivante : ${task.title}. ${task.description}` }
-      ],
-      stream: true
+    if (onChunk) onChunk("// Generating code via Agent Worker...");
+
+    const { data, error } = await insforge.functions.invoke('agent-worker', {
+        body: {
+            projectId,
+            task,
+            modelId
+        }
     });
 
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        fullCode += delta;
-        if (onChunk) onChunk(delta);
-      }
-    }
+    if (error) throw new Error(`Agent Worker Error: ${error.message}`);
 
-    // 2. Une fois fini, on persiste le fichier
-    const fileName = `${task.title.replace(/\s+/g, '-').toLowerCase()}.tsx`;
-    const path = `src/components/${fileName}`;
-    await FileService.saveGeneratedCode(projectId, path, fullCode);
-
-    // 3. Mettre à jour le statut de la tâche en DB
-    await insforge.database
-      .from('tasks')
-      .update({ status: 'completed' })
-      .eq('id', task.id);
-
-    // 4. Notifier
-    await insforge.realtime.publish(`project:${projectId}`, 'file_created', { path, fileName });
+    if (onChunk) onChunk(data.content);
   }
 };

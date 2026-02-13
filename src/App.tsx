@@ -6,38 +6,54 @@ import BuilderView from './views/BuilderView';
 import DAGView from './views/DAGView';
 import CodeView from './views/CodeView';
 import ArtifactsView from './views/ArtifactsView';
+import AuthView from './views/AuthView';
 import { AppView } from './types';
 import { useStore } from './store/useStore';
 import { insforge } from './lib/insforge';
+import { Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>('builder');
-  const { setProject, fetchProjectData, setConnected } = useStore();
+  const { setProject, fetchProjectData, setConnected, checkSession, user, authLoading } = useStore();
   const [darkMode, setDarkMode] = useState(true);
 
-  // Initialisation Mock Project & Connection
+  // Listen for navigation events from Header (Deployment button)
   useEffect(() => {
-    // Simuler un projet existant ou créer un nouveau
-    const initProject = async () => {
-        const projectId = "proj_demo_123"; // TODO: Should come from URL or Project Selection
-        setProject({
-            id: projectId,
-            name: "Demo SaaS CRM",
-            owner_id: "user_1",
-            created_at: new Date().toISOString()
-        });
+      const handleNavigation = (e: any) => {
+          if (e.detail) setCurrentView(e.detail);
+      };
+      window.addEventListener('navigate-view', handleNavigation);
+      return () => window.removeEventListener('navigate-view', handleNavigation);
+  }, []);
 
-        // Connect Realtime
-        await insforge.realtime.connect();
-        setConnected(true);
+  // 1. Check Session on Mount
+  useEffect(() => {
+      checkSession();
+  }, [checkSession]);
 
-        // Fetch Data
-        await fetchProjectData(projectId);
-    };
+  // 2. Initialisation Project & Connection (Once Authenticated)
+  useEffect(() => {
+    if (user) {
+        const initProject = async () => {
+            // Dans un vrai cas, on listerait les projets de l'utilisateur.
+            // Ici on mock un projet par défaut ou le dernier ouvert.
+            const projectId = "proj_demo_123";
+            setProject({
+                id: projectId,
+                name: "Demo SaaS CRM",
+                owner_id: user.id,
+                created_at: new Date().toISOString()
+            });
 
-    initProject();
-  }, [setProject, fetchProjectData, setConnected]);
+            await insforge.realtime.connect();
+            setConnected(true);
+            await fetchProjectData(projectId);
+        };
+        initProject();
+    }
+  }, [user, setProject, fetchProjectData, setConnected]);
 
+  // Dark Mode
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -56,6 +72,21 @@ const App: React.FC = () => {
     }
   };
 
+  // Loading State
+  if (authLoading) {
+      return (
+          <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-500">
+              <Loader2 className="animate-spin w-10 h-10 text-blue-500" />
+          </div>
+      );
+  }
+
+  // Unauthenticated State
+  if (!user) {
+      return <AuthView />;
+  }
+
+  // Authenticated App Shell
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 font-sans">
       <Header currentView={currentView} />

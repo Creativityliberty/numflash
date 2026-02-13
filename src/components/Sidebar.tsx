@@ -57,7 +57,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) => {
       })}
 
       <div className="mt-auto space-y-2">
-          <button className="flex items-center gap-3 px-4 py-3 mx-2 rounded-xl text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors w-[calc(100%-16px)]">
+          <button
+            onClick={() => onViewChange('settings')}
+            className={clsx(
+              "flex items-center gap-3 px-4 py-3 mx-2 rounded-xl transition-colors w-[calc(100%-16px)]",
+              activeView === 'settings'
+                ? "bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white"
+                : "text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800"
+            )}
+          >
               <Settings size={24} />
               <span className="hidden lg:block font-medium">Settings</span>
           </button>

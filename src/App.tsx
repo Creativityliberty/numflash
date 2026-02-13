@@ -8,6 +8,7 @@ import CodeView from './views/CodeView';
 import ArtifactsView from './views/ArtifactsView';
 import DataView from './views/DataView';
 import AuthView from './views/AuthView';
+import SettingsView from './views/SettingsView';
 import { AppView } from './types';
 import { useStore } from './store/useStore';
 import { insforge } from './lib/insforge';
@@ -70,6 +71,7 @@ const App: React.FC = () => {
       case 'code': return <CodeView />;
       case 'data': return <DataView />;
       case 'artifacts': return <ArtifactsView />;
+      case 'settings': return <SettingsView />;
       default: return <BuilderView />;
     }
   };

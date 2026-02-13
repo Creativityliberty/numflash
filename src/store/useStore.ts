@@ -1,6 +1,8 @@
 
 import { create } from 'zustand';
 import { insforge } from '../lib/insforge';
+import { DagService } from '../server/services/dag-service';
+import { FileService } from '../server/services/file-service';
 
 interface Project {
   id: string;
@@ -90,24 +92,21 @@ export const useStore = create<AppState>((set, get) => ({
   setSelectedModel: (modelId) => set({ selectedModel: modelId }),
 
   fetchProjectData: async (projectId) => {
-    // 1. Fetch Tasks
-    const { data: tasks, error: taskError } = await insforge.database
-      .from('tasks')
-      .select('*')
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: true });
+    try {
+        // 1. Fetch Tasks using DagService
+        const tasks = await DagService.getProjectTasks(projectId);
+        set({ tasks: tasks as Task[] });
+    } catch (taskError) {
+        console.error("Error fetching tasks:", taskError);
+    }
 
-    if (tasks) set({ tasks: tasks as Task[] });
-    if (taskError) console.error("Error fetching tasks:", taskError);
-
-    // 2. Fetch Files
-    const { data: files, error: fileError } = await insforge.database
-      .from('files')
-      .select('*')
-      .eq('project_id', projectId);
-
-    if (files) set({ files: files as FileNode[] });
-    if (fileError) console.error("Error fetching files:", fileError);
+    try {
+        // 2. Fetch Files using FileService
+        const files = await FileService.getProjectFiles(projectId);
+        set({ files: files as FileNode[] });
+    } catch (fileError) {
+        console.error("Error fetching files:", fileError);
+    }
   },
 
   checkSession: async () => {

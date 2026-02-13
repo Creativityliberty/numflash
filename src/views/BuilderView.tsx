@@ -7,6 +7,7 @@ import { PROJECT_TEMPLATES } from '../data/templates';
 import { Send, Bot, User, Cpu, Settings2, X, Box } from 'lucide-react';
 import clsx from 'clsx';
 import ModelSelector from '../components/ModelSelector';
+import VoiceInput from '../components/VoiceInput';
 import { GEMINI_MODELS } from '../data/models';
 
 const BuilderView = () => {
@@ -14,7 +15,7 @@ const BuilderView = () => {
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showModelSelector, setShowModelSelector] = useState(false);
-  const [showTemplateSelector, setShowTemplateSelector] = useState(messages.length === 0); // Show template selector on fresh start
+  const [showTemplateSelector, setShowTemplateSelector] = useState(messages.length === 0);
 
   const activeModel = GEMINI_MODELS.find(m => m.id === selectedModel);
 
@@ -26,8 +27,6 @@ const BuilderView = () => {
       addMessage({ role: 'user', content: `Start with template: ${templateId}`, timestamp: new Date() });
 
       try {
-          // In a real implementation, this would call the API. Here we simulate the logic.
-          // Note: TemplateService is client-side here, but should ideally be server-side via `create-project`
           await TemplateService.applyTemplate(currentProject.id, templateId);
           addMessage({
               role: 'system',
@@ -41,18 +40,18 @@ const BuilderView = () => {
       }
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || !currentProject) return;
+  const handleSend = async (textOverride?: string) => {
+    const textToSend = textOverride || input;
+    if (!textToSend.trim() || !currentProject) return;
 
-    const userMsg = { role: 'user', content: input, timestamp: new Date() };
+    const userMsg = { role: 'user', content: textToSend, timestamp: new Date() };
     addMessage(userMsg);
     setInput("");
     setIsProcessing(true);
-    setShowTemplateSelector(false); // Hide if user starts chatting
+    setShowTemplateSelector(false);
 
     try {
-       // Call Chef Agent to plan with Selected Model
-       await ChefAgent.createWorkflow(currentProject.id, input, selectedModel);
+       await ChefAgent.createWorkflow(currentProject.id, textToSend, selectedModel);
 
        addMessage({
            role: 'system',
@@ -95,7 +94,7 @@ const BuilderView = () => {
            </div>
        )}
 
-       <div className="flex-1 overflow-y-auto space-y-6 pb-4">
+       <div className="flex-1 overflow-y-auto space-y-6 pb-4 scroll-smooth">
           {/* Template Selector Card */}
           {showTemplateSelector && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 animate-in fade-in zoom-in duration-300">
@@ -176,22 +175,29 @@ const BuilderView = () => {
           )}
        </div>
 
-       <div className="mt-4 relative">
-           <input
-             type="text"
-             value={input}
-             onChange={(e) => setInput(e.target.value)}
-             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-             placeholder="Décrivez une nouvelle fonctionnalité..."
-             className="w-full pl-6 pr-14 py-4 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400 outline-none shadow-lg transition-all"
+       <div className="mt-4 relative flex items-center gap-2">
+           <div className="relative flex-1">
+               <input
+                 type="text"
+                 value={input}
+                 onChange={(e) => setInput(e.target.value)}
+                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                 placeholder="Décrivez une nouvelle fonctionnalité..."
+                 className="w-full pl-6 pr-12 py-4 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400 outline-none shadow-lg transition-all"
+               />
+               <button
+                 onClick={() => handleSend()}
+                 disabled={!input.trim() || isProcessing}
+                 className="absolute right-2 top-2 p-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 text-white rounded-full transition-colors w-10 h-10 flex items-center justify-center"
+               >
+                   <Send size={18} />
+               </button>
+           </div>
+
+           <VoiceInput
+                onTranscript={(text) => handleSend(text)}
+                isProcessing={isProcessing}
            />
-           <button
-             onClick={handleSend}
-             disabled={!input.trim() || isProcessing}
-             className="absolute right-2 top-2 p-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 text-white rounded-full transition-colors w-10 h-10 flex items-center justify-center"
-           >
-               <Send size={18} />
-           </button>
        </div>
     </div>
   );

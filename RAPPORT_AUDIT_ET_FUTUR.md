@@ -1,85 +1,41 @@
 
-# 🚀 Nümflash Studio - Audit Technique & Rapport Futur
+# 🚀 Nümflash V1 - Rapport d'Implémentation & Roadmap
 
-## 1. Synthèse du Système (L'Univers Nümflash)
+## ✅ Ce qui a été construit (Architecture InsForge Native)
 
-Nous avons transformé une simple SPA Vite en un véritable **OS de Développement** ("InsForge Native"). L'architecture repose sur quatre piliers qui assurent la robustesse, la sécurité et l'extensibilité du système.
+### 1. Backend & Infrastructure (`.insforge/`)
+*   **Schéma de Base de Données** : Tables `projects`, `tasks` (récursive), `files`, `task_dependencies` créées avec Row Level Security (RLS) strict.
+*   **Edge Functions** : `agent-chef` (Planification), `agent-worker` (Exécution), `github-sync` (DevOps).
+*   **Services Serveur** : `DagService`, `FileService`, `DeployService`, `RealtimeHub` pour encapsuler la logique métier.
 
-### 🏗️ Architecture "InsForge Native"
+### 2. Frontend & UX (`src/`)
+*   **Material Design 3** : Interface modernisée avec `tailwindcss` (arrondis, surfaces tonales).
+*   **DAG Canvas** : Visualisation en temps réel du graphe de tâches via `React Flow` et WebSockets.
+*   **Configuration Dynamique** : Vue `SettingsView` pour configurer les clés API (InsForge, OpenAI, Gemini) sans redeployer.
+*   **Interaction Vocale** : Composant `VoiceInput` intégré pour parler directement à l'Agent Chef.
 
-| Composant | Technologie | Rôle dans l'Univers |
-| :--- | :--- | :--- |
-| **Le Cerveau (AI Core)** | **Edge Functions** (`agent-chef`, `agent-worker`) | Isole la logique IA du client. Permet d'appeler les modèles Gemini (Pro, Flash) via un proxy sécurisé. |
-| **Le Système Nerveux (Realtime)** | **InsForge Realtime SDK** (WebSockets) | Synchronise instantanément le DAG, le Code Tree et l'état du déploiement entre tous les clients connectés. |
-| **La Mémoire (Data & Files)** | **PostgreSQL (RLS)** & **S3 Storage** | Stocke les tâches hiérarchiques (DAG) et le code généré. Les politiques RLS (Row Level Security) garantissent l'isolation multi-tenant. |
-| **L'Usine (Deployment)** | **Serverless Functions** (`deploy-project`) | Orchestre la création de ZIP, l'upload et le déclenchement des builds sur l'infrastructure Cloud InsForge. |
-
-### ✅ Audit des Fonctionnalités Implémentées
-
-1.  **Orchestration Multi-Agents** :
-    *   **Chef Agent** : Planifie des workflows complexes en JSON structuré via `agent-chef`.
-    *   **Worker Agent** : Génère du code React/TypeScript et le persiste directement dans le Storage via `agent-worker`.
-    *   **Status** : Opérationnel et sécurisé (Server-side execution).
-
-2.  **Expérience Utilisateur (Material You)** :
-    *   Interface fluide, coins arrondis, transitions animées.
-    *   **Model Selector** : Permet de choisir dynamiquement le LLM (Gemini 3 Pro, Flash, etc.) selon le coût et la vitesse souhaités.
-    *   **Data Inspector** : Vue transparente sur la base de données pour le debug.
-
-3.  **Sécurité & Multi-Tenancy** :
-    *   **Authentication** : Login/Register complet via `insforge.auth`.
-    *   **RLS** : Les politiques SQL assurent qu'un utilisateur ne voit que ses projets (`auth.uid() = owner_id`).
-    *   **API Security** : Les Edge Functions valident systématiquement le token `Authorization`.
-
-4.  **Déploiement ("CPE")** :
-    *   Pipeline complet : `Create -> Upload -> Start Build`.
-    *   Monitoring temps réel dans `ArtifactsView`.
+### 3. Fonctionnalités Avancées
+*   **PocketFlow Cookbook** : Intégration des modèles (Templates) `Agent`, `RAG`, `Voice Chat` dans le sélecteur de projet.
+*   **GitHub Sync** : Pipeline fonctionnel pour pousser le code généré vers un repo distant.
 
 ---
 
-## 2. Les Futurs Univers (Roadmap & Vision)
+## 🔮 Roadmap & Prochaines Étapes (V2 - PocketFlow Integration)
 
-Pour pousser Nümflash au niveau "God Mode", voici les extensions possibles basées sur l'écosystème InsForge et les modèles Gemini avancés.
+Pour aller plus loin vers la "Singularité" de développement :
 
-### 🌌 Univers 1 : L'IA Multimodale & Vocale
-*Utilisation de Gemini 2.5 Flash Native Audio & 3 Pro Image*
+1.  **Exécution PocketFlow Serveur** :
+    *   Actuellement, les templates sont des fichiers statiques. La prochaine étape est d'exécuter le moteur PocketFlow (`flow.py`) directement dans des conteneurs isolés (via InsForge Functions ou un runner dédié).
 
-*   **Voice Coding** : Intégrer un bouton "Micro" dans le `BuilderView` pour dicter les fonctionnalités. L'audio est envoyé brut à Gemini Audio Preview qui retourne le JSON de structure.
-*   **Design-to-Code** : Uploader une capture d'écran (maquette) dans le chat. L'agent `Worker` utilise `gemini-3-pro-image-preview` pour analyser l'UI et générer le code React Pixel-Perfect.
+2.  **Streaming Vocal Bidirectionnel (Gemini Live)** :
+    *   Connecter le `VoiceInput` à une vraie socket audio bidirectionnelle pour une latence < 500ms, au lieu de la boucle STT -> LLM -> TTS actuelle.
 
-### 🌌 Univers 2 : PocketFlow & Validation Business
-*Intégration du module "Business Validator"*
+3.  **Marketplace de Nodes** :
+    *   Permettre aux utilisateurs de créer leurs propres `Nodes` PocketFlow et de les partager.
 
-*   **Concept** : Avant de coder, l'IA doit valider la viabilité.
-*   **Workflow** :
-    1.  **Phase PocketFlow** : Un nouvel Agent "Stratege" interviewe l'utilisateur sur son Business Model (Lean Canvas).
-    2.  **Validation** : Si l'idée est floue, l'agent refuse de coder et propose un "Pivot".
-    3.  **Execution** : Une fois validé, le "Chef Agent" prend le relais pour l'architecture technique.
-*   **Implémentation** : Ajouter une vue `StrategyView` en amont du `BuilderView`.
-
-### 🌌 Univers 3 : Visual Coding & No-Code Bridge
-*Pour les utilisateurs moins techniques*
-
-*   **Noeud-to-Code** : Rendre le DAG éditable manuellement. Si on déplace un noeud ou change une flèche, l'agent `Chef` recalcule les dépendances et met à jour le code.
-*   **Live Preview** : Intégrer un `iframe` sandboxed qui exécute le code React en temps réel (via `WebContainer` ou service de preview InsForge) directement dans l'app.
-
-### 🌌 Univers 4 : Marketplace d'Agents (MCP)
-*Nümflash en tant que plateforme*
-
-*   Nous avons déjà créé `numflash-mcp-definition.json`.
-*   **Vision** : Permettre à des développeurs tiers de créer leurs propres "Agents Spécialisés" (ex: "Agent Stripe", "Agent Tailwind") et les plugger dans Nümflash via le protocole MCP.
+4.  **Déploiement "One-Click" Réel** :
+    *   Finaliser le pipeline CI/CD qui prend le zip généré et le déploie sur Vercel/Netlify ou l'infrastructure InsForge Hosting.
 
 ---
 
-## 3. Préparation pour PocketFlow (Prochaine Étape)
-
-Pour intégrer "PocketFlow" (le validateur d'idées SaaS), nous devrons :
-
-1.  **Étendre le Schéma** : Ajouter une table `business_validations` liée au `project`.
-2.  **Créer l'Agent Stratège** : Un prompt système spécialisé en "Lean Startup" et "Product Market Fit".
-3.  **Flux de Contrôle** :
-    *   `User` -> `PocketFlow Agent` (Chat Socratique) -> `Validation JSON` -> `Chef Agent` (Architecture).
-
-C'est la fondation parfaite pour construire l'outil de création SaaS ultime.
-
-**Status Final : Prêt pour le décollage. 🚀**
+*Généré par l'Agent Architecte Nümflash.*

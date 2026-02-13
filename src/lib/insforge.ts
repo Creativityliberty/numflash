@@ -1,14 +1,20 @@
 
 import { createClient } from '@insforge/sdk';
 
-// Variables d'environnement configurées
-// @ts-ignore
-const baseUrl = import.meta.env.VITE_INSFORGE_URL;
-// @ts-ignore
-const anonKey = import.meta.env.VITE_INSFORGE_API_KEY;
+// Fonction helper pour récupérer les variables (LocalStorage > Env)
+const getEnv = (key: string) => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(key) || import.meta.env[key];
+  }
+  // @ts-ignore
+  return import.meta.env[key];
+};
+
+const baseUrl = getEnv('VITE_INSFORGE_URL');
+const anonKey = getEnv('VITE_INSFORGE_API_KEY');
 
 if (!baseUrl || !anonKey) {
-  console.error("InsForge Configuration Missing: VITE_INSFORGE_URL or VITE_INSFORGE_API_KEY is not defined.");
+  console.warn("InsForge Configuration: Keys not found in env or localStorage. Please configure in Settings.");
 }
 
 /**

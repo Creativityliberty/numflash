@@ -6,6 +6,7 @@ import BuilderView from './views/BuilderView';
 import DAGView from './views/DAGView';
 import CodeView from './views/CodeView';
 import ArtifactsView from './views/ArtifactsView';
+import DataView from './views/DataView';
 import AuthView from './views/AuthView';
 import { AppView } from './types';
 import { useStore } from './store/useStore';
@@ -67,6 +68,7 @@ const App: React.FC = () => {
       case 'builder': return <BuilderView />;
       case 'dag': return <DAGView />;
       case 'code': return <CodeView />;
+      case 'data': return <DataView />;
       case 'artifacts': return <ArtifactsView />;
       default: return <BuilderView />;
     }

@@ -1,41 +1,55 @@
 
-# 🚀 Nümflash V1 - Rapport d'Implémentation & Roadmap
+# 🚀 Nümflash V1 - Rapport d'Audit & Roadmap
 
-## ✅ Ce qui a été construit (Architecture InsForge Native)
+## ✅ Architecture InsForge Native (Vérifiée)
 
 ### 1. Backend & Infrastructure (`.insforge/`)
-*   **Schéma de Base de Données** : Tables `projects`, `tasks` (récursive), `files`, `task_dependencies` créées avec Row Level Security (RLS) strict.
-*   **Edge Functions** : `agent-chef` (Planification), `agent-worker` (Exécution), `github-sync` (DevOps).
-*   **Services Serveur** : `DagService`, `FileService`, `DeployService`, `RealtimeHub` pour encapsuler la logique métier.
+*   **Schéma SQL** :
+    *   Tables : `projects`, `tasks` (récursive), `files`, `task_dependencies`.
+    *   **Sécurité** : Row Level Security (RLS) activé sur toutes les tables. Les politiques garantissent que seul le `owner_id` peut lire/écrire ses données.
+*   **Edge Functions** :
+    *   `agent-chef` : Génère le plan de tâches via IA. Sécurisé par token utilisateur.
+    *   `agent-worker` : Génère le code et le stocke. Accède à la DB via le contexte utilisateur.
+    *   `github-sync` : Pousse le code vers GitHub. Utilise `Octokit`.
+    *   `deploy-project` : (Simulation) Déclenche le déploiement.
 
-### 2. Frontend & UX (`src/`)
-*   **Material Design 3** : Interface modernisée avec `tailwindcss` (arrondis, surfaces tonales).
-*   **DAG Canvas** : Visualisation en temps réel du graphe de tâches via `React Flow` et WebSockets.
-*   **Configuration Dynamique** : Vue `SettingsView` pour configurer les clés API (InsForge, OpenAI, Gemini) sans redeployer.
-*   **Interaction Vocale** : Composant `VoiceInput` intégré pour parler directement à l'Agent Chef.
+### 2. Frontend & Services (`src/`)
+*   **Store (Zustand)** : Centralise l'état (`tasks`, `files`, `user`). Connecté via `src/lib/insforge.ts`.
+*   **Services** :
+    *   `DagService` : Gestion typée des tâches (CRUD).
+    *   `FileService` : Gestion des fichiers (Upload/Download) via Storage SDK.
+    *   `TemplateService` : (Nouveau) Applique les templates PocketFlow en créant des tâches et fichiers en base.
+    *   `RealtimeHub` : Écoute les événements WebSocket (`task_updated`, `file_created`).
+*   **UI (Material Design 3)** :
+    *   Composants modernisés avec Tailwind (`rounded-xl`, `bg-slate-50`).
+    *   `DAGCanvas` : Visualisation dynamique du graphe via React Flow.
+    *   `DataView` : Inspecteur de base de données intégré pour le débogage RLS.
+    *   `SettingsView` : Configuration dynamique des clés API (LocalStorage).
 
-### 3. Fonctionnalités Avancées
-*   **PocketFlow Cookbook** : Intégration des modèles (Templates) `Agent`, `RAG`, `Voice Chat` dans le sélecteur de projet.
-*   **GitHub Sync** : Pipeline fonctionnel pour pousser le code généré vers un repo distant.
-
----
-
-## 🔮 Roadmap & Prochaines Étapes (V2 - PocketFlow Integration)
-
-Pour aller plus loin vers la "Singularité" de développement :
-
-1.  **Exécution PocketFlow Serveur** :
-    *   Actuellement, les templates sont des fichiers statiques. La prochaine étape est d'exécuter le moteur PocketFlow (`flow.py`) directement dans des conteneurs isolés (via InsForge Functions ou un runner dédié).
-
-2.  **Streaming Vocal Bidirectionnel (Gemini Live)** :
-    *   Connecter le `VoiceInput` à une vraie socket audio bidirectionnelle pour une latence < 500ms, au lieu de la boucle STT -> LLM -> TTS actuelle.
-
-3.  **Marketplace de Nodes** :
-    *   Permettre aux utilisateurs de créer leurs propres `Nodes` PocketFlow et de les partager.
-
-4.  **Déploiement "One-Click" Réel** :
-    *   Finaliser le pipeline CI/CD qui prend le zip généré et le déploie sur Vercel/Netlify ou l'infrastructure InsForge Hosting.
+### 3. Fonctionnalités Clés
+*   **Voice Coding** : Intégré via `VoiceInput.tsx` (Web Speech API).
+*   **Templates PocketFlow** : Intégrés et fonctionnels via `TemplateService`. Les exemples (Agent, RAG, Voice) sont chargés comme projets.
 
 ---
 
-*Généré par l'Agent Architecte Nümflash.*
+## 🔮 Roadmap V2 & Améliorations Futures
+
+1.  **Sécurité des Clés API** :
+    *   Actuellement : Stockées dans le `localStorage` du navigateur (Client-side).
+    *   Futur : Stocker les clés de manière chiffrée dans une table `user_secrets` (Backend) ou utiliser le Vault InsForge.
+
+2.  **Exécution Serveur des Agents** :
+    *   Actuellement : Les agents sont simulés ou exécutés via des prompts simples.
+    *   Futur : Exécuter le moteur PocketFlow (`flow.py`) dans des conteneurs éphémères pour une vraie autonomie.
+
+3.  **Streaming Bidirectionnel (Gemini Live)** :
+    *   Actuellement : Requêtes HTTP/WebSocket standard.
+    *   Futur : Intégrer une connexion WebSocket audio directe pour une latence < 500ms.
+
+4.  **Déploiement Réel** :
+    *   Actuellement : Simulation via `deploy-project`.
+    *   Futur : Pipeline CI/CD complet vers Vercel/Netlify.
+
+---
+
+*Audit réalisé par l'Agent Architecte Nümflash.*

@@ -9,15 +9,16 @@ import ArtifactsView from './views/ArtifactsView';
 import DataView from './views/DataView';
 import AuthView from './views/AuthView';
 import SettingsView from './views/SettingsView';
+import ProjectListView from './views/ProjectListView';
+import TaskRunner from './components/TaskRunner';
 import { AppView } from './types';
 import { useStore } from './store/useStore';
-import { insforge } from './lib/insforge';
 import { Loader2 } from 'lucide-react';
 import { ToastProvider } from './components/Toast';
 
 const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>('builder');
-  const { setProject, fetchProjectData, setConnected, checkSession, user, authLoading } = useStore();
+  const { currentProject, checkSession, user, authLoading } = useStore();
   const [darkMode, setDarkMode] = useState(true);
 
   // Listen for navigation events
@@ -29,30 +30,10 @@ const AppContent: React.FC = () => {
       return () => window.removeEventListener('navigate-view', handleNavigation);
   }, []);
 
-  // 1. Check Session
+  // Check Session
   useEffect(() => {
       checkSession();
   }, [checkSession]);
-
-  // 2. Init Project
-  useEffect(() => {
-    if (user) {
-        const initProject = async () => {
-            const projectId = "proj_demo_123";
-            setProject({
-                id: projectId,
-                name: "Demo SaaS CRM",
-                owner_id: user.id,
-                created_at: new Date().toISOString()
-            });
-
-            await insforge.realtime.connect();
-            setConnected(true);
-            await fetchProjectData(projectId);
-        };
-        initProject();
-    }
-  }, [user, setProject, fetchProjectData, setConnected]);
 
   // Dark Mode
   useEffect(() => {
@@ -87,8 +68,36 @@ const AppContent: React.FC = () => {
       return <AuthView />;
   }
 
+  // If no project is selected and user is not in Settings, show Project List
+  if (!currentProject && currentView !== 'settings') {
+      return (
+        <div className="flex flex-col h-screen w-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
+             {/* Header simplified for project selection */}
+            <header className="h-16 flex items-center justify-between px-6 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-teal-400 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <span className="text-white font-bold text-xl">N</span>
+                    </div>
+                    <h1 className="font-bold text-slate-800 dark:text-white">Nümflash Studio</h1>
+                </div>
+                {/* Access settings even without project */}
+                <button
+                  onClick={() => setCurrentView('settings')}
+                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                >
+                  Config
+                </button>
+            </header>
+            <main className="flex-1 overflow-hidden">
+                <ProjectListView />
+            </main>
+        </div>
+      );
+  }
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 font-sans">
+      <TaskRunner />
       <Header currentView={currentView} />
 
       <div className="flex flex-1 overflow-hidden">

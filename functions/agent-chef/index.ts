@@ -68,12 +68,10 @@ export default async function(req: Request): Promise<Response> {
         status: 'pending'
     }));
 
-    const { error: insertError } = await client.database
+    const { data: insertedTasks, error: insertError } = await client.database
       .from('tasks')
-      .insert(tasksToInsert);
-
-    // Mock return because .select() is not on our minimal mock type
-    const insertedTasks = tasksToInsert;
+      .insert(tasksToInsert)
+      .select();
 
     if (insertError) throw insertError;
 

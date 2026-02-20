@@ -40,5 +40,15 @@ export const FileService = {
       if (!data) return "";
 
       return await data.text();
+  },
+
+  async getProjectFiles(projectId: string) {
+      const { data, error } = await insforge.database
+        .from('files')
+        .select('*')
+        .eq('project_id', projectId);
+
+      if (error) throw new Error(error.message);
+      return data;
   }
 };

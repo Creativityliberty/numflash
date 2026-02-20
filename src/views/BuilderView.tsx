@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { ChefAgent } from '../server/agents/chef-agent';
 import { TemplateService } from '../server/services/template-service';
@@ -7,16 +7,55 @@ import { PROJECT_TEMPLATES } from '../data/templates';
 import { Send, Bot, User, Cpu, Settings2, X, Box } from 'lucide-react';
 import clsx from 'clsx';
 import ModelSelector from '../components/ModelSelector';
+import VoiceInput from '../components/VoiceInput';
 import { GEMINI_MODELS } from '../data/models';
+import { useToast } from '../components/Toast';
+import { insforge } from '../lib/insforge';
 
 const BuilderView = () => {
   const { messages, addMessage, currentProject, selectedModel } = useStore();
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showModelSelector, setShowModelSelector] = useState(false);
-  const [showTemplateSelector, setShowTemplateSelector] = useState(messages.length === 0); // Show template selector on fresh start
+  const [showTemplateSelector, setShowTemplateSelector] = useState(messages.length === 0);
+  const { showToast } = useToast();
 
   const activeModel = GEMINI_MODELS.find(m => m.id === selectedModel);
+
+  // Listen for realtime workflow events to update chat
+  useEffect(() => {
+    if (!currentProject) return;
+
+    const channel = `project:${currentProject.id}`;
+    const handleWorkflowCreated = (payload: any) => {
+        // Add a message when tasks are actually created by the backend
+        addMessage({
+            role: 'system',
+            content: `✅ Plan Generated: ${payload.tasks.length} tasks created. Starting execution...`,
+            timestamp: new Date()
+        });
+        showToast("Workflow execution started", "success");
+    };
+
+    const handleTaskUpdated = (payload: any) => {
+       // Optional: Add fine-grained updates if needed, but might spam chat
+       if (payload.status === 'completed') {
+           // We could show a toast instead of a message for individual tasks
+           // showToast(`Task completed`, 'success');
+       }
+    };
+
+    insforge.realtime.on('workflow_created', handleWorkflowCreated);
+    insforge.realtime.on('task_updated', handleTaskUpdated);
+
+    // Note: Cleaning up listeners on unmount is tricky with the current simple SDK mock
+    // In a real app we'd use a dedicated hook or subscription manager
+
+    return () => {
+        // Cleanup if SDK supports off()
+    };
+  }, [currentProject, addMessage, showToast]);
+
 
   const handleTemplateSelect = async (templateId: string) => {
       if (!currentProject) return;
@@ -26,42 +65,47 @@ const BuilderView = () => {
       addMessage({ role: 'user', content: `Start with template: ${templateId}`, timestamp: new Date() });
 
       try {
-          // In a real implementation, this would call the API. Here we simulate the logic.
-          // Note: TemplateService is client-side here, but should ideally be server-side via `create-project`
           await TemplateService.applyTemplate(currentProject.id, templateId);
           addMessage({
               role: 'system',
-              content: `Template ${templateId} applied successfully. You can now customize it or deploy.`,
+              content: `Template ${templateId} applied successfully.`,
               timestamp: new Date()
           });
+          showToast(`Template ${templateId} applied successfully!`, 'success');
+
+          window.dispatchEvent(new CustomEvent('navigate-view', { detail: 'dag' }));
+
       } catch (e: any) {
           addMessage({ role: 'system', content: `Error applying template: ${e.message}`, isError: true });
+          showToast(e.message, 'error');
       } finally {
           setIsProcessing(false);
       }
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || !currentProject) return;
+  const handleSend = async (textOverride?: string) => {
+    const textToSend = textOverride || input;
+    if (!textToSend.trim() || !currentProject) return;
 
-    const userMsg = { role: 'user', content: input, timestamp: new Date() };
+    const userMsg = { role: 'user', content: textToSend, timestamp: new Date() };
     addMessage(userMsg);
     setInput("");
     setIsProcessing(true);
-    setShowTemplateSelector(false); // Hide if user starts chatting
+    setShowTemplateSelector(false);
 
     try {
-       // Call Chef Agent to plan with Selected Model
-       await ChefAgent.createWorkflow(currentProject.id, input, selectedModel);
+       await ChefAgent.createWorkflow(currentProject.id, textToSend, selectedModel);
 
+       // Immediate feedback, real confirmation comes via WebSocket
        addMessage({
            role: 'system',
-           content: "J'ai analysé votre demande. Le plan d'exécution a été généré et les tâches sont en cours de création dans la vue DAG.",
+           content: "Planning request sent to Chef Agent...",
            timestamp: new Date()
        });
 
     } catch (error: any) {
         addMessage({ role: 'system', content: `Erreur: ${error.message}`, isError: true, timestamp: new Date() });
+        showToast(error.message, 'error');
     } finally {
         setIsProcessing(false);
     }
@@ -95,7 +139,7 @@ const BuilderView = () => {
            </div>
        )}
 
-       <div className="flex-1 overflow-y-auto space-y-6 pb-4">
+       <div className="flex-1 overflow-y-auto space-y-6 pb-4 scroll-smooth">
           {/* Template Selector Card */}
           {showTemplateSelector && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 animate-in fade-in zoom-in duration-300">
@@ -176,22 +220,29 @@ const BuilderView = () => {
           )}
        </div>
 
-       <div className="mt-4 relative">
-           <input
-             type="text"
-             value={input}
-             onChange={(e) => setInput(e.target.value)}
-             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-             placeholder="Décrivez une nouvelle fonctionnalité..."
-             className="w-full pl-6 pr-14 py-4 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400 outline-none shadow-lg transition-all"
+       <div className="mt-4 relative flex items-center gap-2">
+           <div className="relative flex-1">
+               <input
+                 type="text"
+                 value={input}
+                 onChange={(e) => setInput(e.target.value)}
+                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                 placeholder="Décrivez une nouvelle fonctionnalité..."
+                 className="w-full pl-6 pr-12 py-4 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400 outline-none shadow-lg transition-all"
+               />
+               <button
+                 onClick={() => handleSend()}
+                 disabled={!input.trim() || isProcessing}
+                 className="absolute right-2 top-2 p-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 text-white rounded-full transition-colors w-10 h-10 flex items-center justify-center"
+               >
+                   <Send size={18} />
+               </button>
+           </div>
+
+           <VoiceInput
+                onTranscript={(text) => handleSend(text)}
+                isProcessing={isProcessing}
            />
-           <button
-             onClick={handleSend}
-             disabled={!input.trim() || isProcessing}
-             className="absolute right-2 top-2 p-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 text-white rounded-full transition-colors w-10 h-10 flex items-center justify-center"
-           >
-               <Send size={18} />
-           </button>
        </div>
     </div>
   );

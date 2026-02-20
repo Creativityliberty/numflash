@@ -11,9 +11,24 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { insforge } from '../lib/insforge';
 import { useStore } from '../store/useStore';
+import { Cpu } from 'lucide-react';
 
 const DAGView = () => {
   const { currentProject, tasks, updateTask } = useStore();
+
+  if (!currentProject) {
+      return (
+          <div className="h-full w-full flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 transition-colors p-8 text-center">
+              <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                  <Cpu size={48} className="text-slate-400 dark:text-slate-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">No Project Selected</h2>
+              <p className="text-slate-500 dark:text-slate-400 max-w-md">
+                  Please create a new project or select an existing one from the AI Architect view to visualize the execution graph.
+              </p>
+          </div>
+      );
+  }
 
   // Transform tasks into nodes/edges for ReactFlow
   const initialNodes = tasks.map((task, index) => ({

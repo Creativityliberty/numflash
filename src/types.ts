@@ -1,2 +1,2 @@
 
-export type AppView = 'builder' | 'dag' | 'code' | 'data' | 'artifacts';
+export type AppView = 'builder' | 'dag' | 'code' | 'data' | 'artifacts' | 'settings';

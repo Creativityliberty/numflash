@@ -37,7 +37,8 @@ CREATE TABLE files (
   path TEXT NOT NULL,
   storage_key TEXT NOT NULL,
   storage_url TEXT NOT NULL,
-  updated_at TIMESTAMPTZ DEFAULT now()
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(project_id, path)
 );
 
 -- Sécurité : Activation du Row Level Security (RLS)

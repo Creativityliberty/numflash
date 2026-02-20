@@ -55,21 +55,24 @@ export default async function(req: Request): Promise<Response> {
     // 3. Sauvegarder le fichier (Storage + DB)
     // Upload Blob
     const fileBlob = new Blob([generatedCode], { type: 'text/plain' });
+    const storagePath = `${projectId}/${path}`;
     const { data: storageData, error: storageError } = await client.storage
         .from('code-assets')
-        .upload(path, fileBlob); // Note: In Deno env, Blob/File might need polyfill or string content directly if supported
+        .upload(storagePath, fileBlob, { upsert: true });
 
     if (storageError) throw storageError;
 
     // Insert DB Reference
-    const { error: dbError } = await client.database
+    const { data: fileRecord, error: dbError } = await client.database
         .from('files')
-        .insert([{
+        .upsert([{
             project_id: projectId,
             path: path,
             storage_key: storageData.key,
             storage_url: storageData.url
-        }]);
+        }], { onConflict: 'project_id, path' })
+        .select()
+        .single();
 
     if (dbError) throw dbError;
 
@@ -80,7 +83,7 @@ export default async function(req: Request): Promise<Response> {
         .eq('id', task.id);
 
     // 5. Notify Realtime
-    await client.realtime.publish(`project:${projectId}`, 'file_created', { path, fileName });
+    await client.realtime.publish(`project:${projectId}`, 'file_created', fileRecord);
     await client.realtime.publish(`project:${projectId}`, 'task_updated', { id: task.id, status: 'completed' });
 
     return new Response(JSON.stringify({ success: true, path, content: generatedCode }), {

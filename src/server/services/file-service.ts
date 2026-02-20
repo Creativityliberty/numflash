@@ -10,23 +10,30 @@ export const FileService = {
     const fileBlob = new Blob([content], { type: 'text/plain' });
 
     // 2. Upload dans le bucket 'code-assets'
+    // Use project ID to namespace files in storage
+    const storagePath = `${projectId}/${path}`;
     const { data: storageData, error: storageError } = await insforge.storage
       .from('code-assets')
-      .upload(path, fileBlob);
+      .upload(storagePath, fileBlob, { upsert: true });
 
     if (storageError) throw new Error(`Erreur Storage: ${storageError.message}`);
 
     // 3. Enregistrer les métadonnées dans la table 'files' pour le Tree View
-    const { error: dbError } = await insforge.database
+    const { data: fileRecord, error: dbError } = await insforge.database
       .from('files')
-      .insert([{
+      .upsert([{
         project_id: projectId,
         path: path,
         storage_key: storageData.key,
         storage_url: storageData.url
-      }]);
+      }], { onConflict: 'project_id, path' })
+      .select()
+      .single();
 
     if (dbError) throw new Error(`Erreur Database: ${dbError.message}`);
+
+    // 4. Notify Realtime
+    await insforge.realtime.publish(`project:${projectId}`, 'file_created', fileRecord);
 
     return storageData;
   },

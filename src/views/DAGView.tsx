@@ -14,7 +14,7 @@ import { useStore } from '../store/useStore';
 import { Cpu } from 'lucide-react';
 
 const DAGView = () => {
-  const { currentProject, tasks, updateTask } = useStore();
+  const { currentProject, tasks, updateTask, setTasks } = useStore();
 
   if (!currentProject) {
       return (
@@ -96,6 +96,12 @@ const DAGView = () => {
 
       insforge.realtime.on('task_updated', (payload: any) => {
         updateTask(payload.id, payload.status);
+      });
+
+      insforge.realtime.on('workflow_created', (payload: any) => {
+        if (payload.tasks) {
+            setTasks(payload.tasks);
+        }
       });
     };
 

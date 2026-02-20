@@ -13,13 +13,14 @@ import { AppView } from './types';
 import { useStore } from './store/useStore';
 import { insforge } from './lib/insforge';
 import { Loader2 } from 'lucide-react';
+import { ToastProvider } from './components/Toast';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>('builder');
   const { setProject, fetchProjectData, setConnected, checkSession, user, authLoading } = useStore();
   const [darkMode, setDarkMode] = useState(true);
 
-  // Listen for navigation events from Header (Deployment button)
+  // Listen for navigation events
   useEffect(() => {
       const handleNavigation = (e: any) => {
           if (e.detail) setCurrentView(e.detail);
@@ -28,17 +29,15 @@ const App: React.FC = () => {
       return () => window.removeEventListener('navigate-view', handleNavigation);
   }, []);
 
-  // 1. Check Session on Mount
+  // 1. Check Session
   useEffect(() => {
       checkSession();
   }, [checkSession]);
 
-  // 2. Initialisation Project & Connection (Once Authenticated)
+  // 2. Init Project
   useEffect(() => {
     if (user) {
         const initProject = async () => {
-            // Dans un vrai cas, on listerait les projets de l'utilisateur.
-            // Ici on mock un projet par défaut ou le dernier ouvert.
             const projectId = "proj_demo_123";
             setProject({
                 id: projectId,
@@ -76,7 +75,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Loading State
   if (authLoading) {
       return (
           <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-500">
@@ -85,12 +83,10 @@ const App: React.FC = () => {
       );
   }
 
-  // Unauthenticated State
   if (!user) {
       return <AuthView />;
   }
 
-  // Authenticated App Shell
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 font-sans">
       <Header currentView={currentView} />
@@ -112,6 +108,14 @@ const App: React.FC = () => {
         </span>
       </button>
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 };
 

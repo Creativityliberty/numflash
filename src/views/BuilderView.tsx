@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { ChefAgent } from '../server/agents/chef-agent';
 import { TemplateService } from '../server/services/template-service';
@@ -9,6 +9,8 @@ import clsx from 'clsx';
 import ModelSelector from '../components/ModelSelector';
 import VoiceInput from '../components/VoiceInput';
 import { GEMINI_MODELS } from '../data/models';
+import { useToast } from '../components/Toast';
+import { insforge } from '../lib/insforge';
 
 const BuilderView = () => {
   const { messages, addMessage, currentProject, selectedModel } = useStore();
@@ -16,8 +18,44 @@ const BuilderView = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(messages.length === 0);
+  const { showToast } = useToast();
 
   const activeModel = GEMINI_MODELS.find(m => m.id === selectedModel);
+
+  // Listen for realtime workflow events to update chat
+  useEffect(() => {
+    if (!currentProject) return;
+
+    const channel = `project:${currentProject.id}`;
+    const handleWorkflowCreated = (payload: any) => {
+        // Add a message when tasks are actually created by the backend
+        addMessage({
+            role: 'system',
+            content: `✅ Plan Generated: ${payload.tasks.length} tasks created. Starting execution...`,
+            timestamp: new Date()
+        });
+        showToast("Workflow execution started", "success");
+    };
+
+    const handleTaskUpdated = (payload: any) => {
+       // Optional: Add fine-grained updates if needed, but might spam chat
+       if (payload.status === 'completed') {
+           // We could show a toast instead of a message for individual tasks
+           // showToast(`Task completed`, 'success');
+       }
+    };
+
+    insforge.realtime.on('workflow_created', handleWorkflowCreated);
+    insforge.realtime.on('task_updated', handleTaskUpdated);
+
+    // Note: Cleaning up listeners on unmount is tricky with the current simple SDK mock
+    // In a real app we'd use a dedicated hook or subscription manager
+
+    return () => {
+        // Cleanup if SDK supports off()
+    };
+  }, [currentProject, addMessage, showToast]);
+
 
   const handleTemplateSelect = async (templateId: string) => {
       if (!currentProject) return;
@@ -30,11 +68,16 @@ const BuilderView = () => {
           await TemplateService.applyTemplate(currentProject.id, templateId);
           addMessage({
               role: 'system',
-              content: `Template ${templateId} applied successfully. You can now customize it or deploy.`,
+              content: `Template ${templateId} applied successfully.`,
               timestamp: new Date()
           });
+          showToast(`Template ${templateId} applied successfully!`, 'success');
+
+          window.dispatchEvent(new CustomEvent('navigate-view', { detail: 'dag' }));
+
       } catch (e: any) {
           addMessage({ role: 'system', content: `Error applying template: ${e.message}`, isError: true });
+          showToast(e.message, 'error');
       } finally {
           setIsProcessing(false);
       }
@@ -53,14 +96,16 @@ const BuilderView = () => {
     try {
        await ChefAgent.createWorkflow(currentProject.id, textToSend, selectedModel);
 
+       // Immediate feedback, real confirmation comes via WebSocket
        addMessage({
            role: 'system',
-           content: "J'ai analysé votre demande. Le plan d'exécution a été généré et les tâches sont en cours de création dans la vue DAG.",
+           content: "Planning request sent to Chef Agent...",
            timestamp: new Date()
        });
 
     } catch (error: any) {
         addMessage({ role: 'system', content: `Erreur: ${error.message}`, isError: true, timestamp: new Date() });
+        showToast(error.message, 'error');
     } finally {
         setIsProcessing(false);
     }
